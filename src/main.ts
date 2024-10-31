@@ -99,11 +99,13 @@ class MyScene {
 
   addBackground() {
     let geo = new THREE.PlaneGeometry(this.width, this.height, 1, 1);
+    let t = loadTexture("./bg.webp");
+    t.wrapS = THREE.RepeatWrapping;
+    t.wrapT = THREE.RepeatWrapping;
     this.textureMaterial = new THREE.ShaderMaterial({
       uniforms: {
-        uTexture: new THREE.Uniform(loadTexture("./bg.webp")),
+        uTexture: new THREE.Uniform(t),
         uDisplacement: new THREE.Uniform(null),
-        uDisplacementG: new THREE.Uniform(null),
         uTime: new THREE.Uniform(null),
         uMouse: new THREE.Uniform(new THREE.Vector2(0, 0)),
       },
@@ -119,50 +121,46 @@ class MyScene {
   wobblyInner: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
 
   addWobbly() {
-    let geo = new THREE.PlaneGeometry(300, 300, 1, 1);
+    let geo = new THREE.PlaneGeometry(400, 400, 1, 1);
     let mat = new THREE.MeshBasicMaterial({
       map: loadTexture("./disco6.png"),
     });
     this.wobbly = new THREE.Mesh(geo, mat);
     this.scene.add(this.wobbly);
-
-    let displacementTexture = loadTexture("./Manifold1.png");
-    displacementTexture.wrapS = THREE.RepeatWrapping;
-    displacementTexture.wrapT = THREE.RepeatWrapping;
-
-    let matInner = new THREE.ShaderMaterial({
-      transparent: true,
-      uniforms: {
-        uTexture: new THREE.Uniform(loadTexture("./ripple.png")),
-        uDisplacement: new THREE.Uniform(displacementTexture),
-        uTime: new THREE.Uniform(0),
-      },
-      depthTest: false,
-      depthWrite: false,
-      vertexShader: wobVertex,
-      fragmentShader: wobFragment,
-    });
-    this.wobblyInner = new THREE.Mesh(geo, matInner);
-    //this.scene.add(this.wobblyInner);
   }
 
   updateWobbly() {
     this.wobbly.position.x = this.mouse.x;
     this.wobbly.position.y = this.mouse.y;
-
-    this.wobblyInner.position.x = this.mouse.x;
-    this.wobblyInner.position.y = this.mouse.y;
   }
 
   clock = new THREE.Clock();
 
+  dir = 0;
+  dirF = 0;
+  unit = 0.0002;
+
   render() {
     const elapsedTime = this.clock.getElapsedTime();
 
+    if (this.dir) {
+      this.wobbly.scale.add(new THREE.Vector3(this.unit, this.unit, this.unit));
+      this.dirF++;
+      if (this.dirF === 60) {
+        this.dirF = 0;
+        this.dir = 0;
+      }
+    } else {
+      this.wobbly.scale.sub(new THREE.Vector3(this.unit, this.unit, this.unit));
+      this.dirF++;
+      if (this.dirF === 60) {
+        this.dirF = 0;
+        this.dir = 1;
+      }
+    }
+
     // Update controls
     this.controls.update();
-
-    this.wobblyInner.material.uniforms.uTime.value = elapsedTime;
 
     this.updateWobbly();
 
