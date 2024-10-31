@@ -4,7 +4,9 @@ import Stats from "three/examples/jsm/libs/stats.module.js";
 import { loadTexture } from "./utils";
 import fragment from "./shaders/bg/fragment.glsl";
 import vertex from "./shaders/bg/vertex.glsl";
-import "./index.css";
+import wobFragment from "./shaders/wob/fragment.glsl";
+import wobVertex from "./shaders/wob/vertex.glsl";
+import "./app.css";
 
 class MyScene {
   scene = new THREE.Scene();
@@ -15,6 +17,7 @@ class MyScene {
   canvas = document.querySelector("canvas.webgl") as HTMLCanvasElement;
   controls = new OrbitControls(this.camera, this.canvas);
   mouse = new THREE.Vector2(0, 0);
+  uMouse = new THREE.Vector2(0, 0);
   prevMouse = new THREE.Vector2(0, 0);
 
   textureScene = new THREE.Scene();
@@ -83,12 +86,15 @@ class MyScene {
     window.addEventListener("mousemove", (event) => {
       this.mouse.x = event.clientX - this.width / 2;
       this.mouse.y = this.height / 2 - event.clientY;
+
+      this.uMouse.x = event.clientX / window.innerWidth;
+      this.uMouse.y = 1.0 - event.clientY / window.innerHeight;
     });
   }
 
   addObjects() {
     this.addBackground();
-    this.addRipples();
+    this.addWobbly();
   }
 
   addBackground() {
@@ -97,6 +103,9 @@ class MyScene {
       uniforms: {
         uTexture: new THREE.Uniform(loadTexture("./bg.webp")),
         uDisplacement: new THREE.Uniform(null),
+        uDisplacementG: new THREE.Uniform(null),
+        uTime: new THREE.Uniform(null),
+        uMouse: new THREE.Uniform(new THREE.Vector2(0, 0)),
       },
       vertexShader: vertex,
       fragmentShader: fragment,
@@ -105,81 +114,74 @@ class MyScene {
     this.textureScene.add(mesh);
   }
 
-  rippleMeshes: Array<
-    THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>
-  > = [];
-  rippleCount = 50;
-  currentRipple = 0;
+  wobbly: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
 
-  addRipples() {
-    let geo = new THREE.PlaneGeometry(100, 100, 1, 1);
+  wobblyInner: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
 
-    for (let index = 0; index < this.rippleCount; index++) {
-      let mat = new THREE.MeshBasicMaterial({
-        map: loadTexture("./ripple.png"),
-        transparent: true,
-        depthTest: false,
-        depthWrite: false,
-      });
-      let mesh = new THREE.Mesh(geo, mat);
-      mesh.visible = false;
-      this.rippleMeshes.push(mesh);
-      this.scene.add(mesh);
-    }
+  addWobbly() {
+    let geo = new THREE.PlaneGeometry(300, 300, 1, 1);
+    let mat = new THREE.MeshBasicMaterial({
+      map: loadTexture("./disco6.png"),
+    });
+    this.wobbly = new THREE.Mesh(geo, mat);
+    this.scene.add(this.wobbly);
 
-    window.addEventListener("mousemove", this.createRipple.bind(this));
+    let displacementTexture = loadTexture("./Manifold1.png");
+    displacementTexture.wrapS = THREE.RepeatWrapping;
+    displacementTexture.wrapT = THREE.RepeatWrapping;
+
+    let matInner = new THREE.ShaderMaterial({
+      transparent: true,
+      uniforms: {
+        uTexture: new THREE.Uniform(loadTexture("./ripple.png")),
+        uDisplacement: new THREE.Uniform(displacementTexture),
+        uTime: new THREE.Uniform(0),
+      },
+      depthTest: false,
+      depthWrite: false,
+      vertexShader: wobVertex,
+      fragmentShader: wobFragment,
+    });
+    this.wobblyInner = new THREE.Mesh(geo, matInner);
+    //this.scene.add(this.wobblyInner);
   }
 
-  createRipple() {
-    if (
-      Math.abs(this.mouse.x - this.prevMouse.x) < 25 &&
-      Math.abs(this.mouse.y - this.prevMouse.y) < 25
-    ) {
-      return;
-    }
+  updateWobbly() {
+    this.wobbly.position.x = this.mouse.x;
+    this.wobbly.position.y = this.mouse.y;
 
-    let nextMesh = this.rippleMeshes[this.currentRipple];
-    nextMesh.position.x = this.mouse.x;
-    nextMesh.position.y = this.mouse.y;
-    nextMesh.visible = true;
-    nextMesh.material.opacity = 0.7;
-    nextMesh.scale.setX(1);
-    nextMesh.scale.setY(1);
-    nextMesh.rotation.z = Math.PI * Math.random();
-
-    this.currentRipple = (this.currentRipple + 1) % this.rippleCount;
-    this.prevMouse.x = this.mouse.x;
-    this.prevMouse.y = this.mouse.y;
+    this.wobblyInner.position.x = this.mouse.x;
+    this.wobblyInner.position.y = this.mouse.y;
   }
 
-  updateRipples() {
-    for (const ripple of this.rippleMeshes) {
-      if (ripple.material.opacity < 0.001) {
-        ripple.visible = false;
-      } else {
-        ripple.material.opacity *= 0.97;
-        ripple.scale.x = ripple.scale.x * 0.982 + 0.08;
-        ripple.scale.y = ripple.scale.y * 0.982 + 0.08;
-      }
-    }
-  }
+  clock = new THREE.Clock();
 
   render() {
+    const elapsedTime = this.clock.getElapsedTime();
+
     // Update controls
     this.controls.update();
+
+    this.wobblyInner.material.uniforms.uTime.value = elapsedTime;
+
+    this.updateWobbly();
 
     this.renderer.setRenderTarget(this.baseTexture);
     this.renderer.render(this.scene, this.camera);
     this.textureMaterial.uniforms.uDisplacement.value =
       this.baseTexture.texture;
+    this.textureMaterial.uniforms.uTime.value = elapsedTime;
+    this.textureMaterial.uniforms.uMouse.value = new THREE.Vector2(
+      this.uMouse.x,
+      this.uMouse.y
+    );
 
     this.renderer.setRenderTarget(null);
     this.renderer.clear();
     this.renderer.render(this.textureScene, this.camera);
 
-    this.updateRipples();
-
     // Render
+    //this.renderer.render(this.scene, this.camera);
 
     // Call tick again on the next frame
     window.requestAnimationFrame(this.render.bind(this));
