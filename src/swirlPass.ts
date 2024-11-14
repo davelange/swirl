@@ -1,27 +1,16 @@
-import {
-	Vector2
-} from 'three';
+export const SwirlPass = {
+  name: "Swirl",
 
-/**
- * Dot screen shader
- * based on glfx.js sepia shader
- * https://github.com/evanw/glfx.js
- */
+  uniforms: {
+    scale: { value: 1.0 },
+    smoothStepStart: { value: 1.0 },
+    smoothStepEnd: { value: 1.0 },
+    time: { value: 0.0 },
+    delay: { value: 0.0 },
+    displacement: { value: null },
+  },
 
-const customPass = {
-
-	name: 'CustomShader',
-
-	uniforms: {
-		'scale': { value: 1.0 },
-		'smoothStepStart': { value: 1.0 },
-		'smoothStepEnd': { value: 1.0 },
-		'time': { value: 0.0 },
-		'delay': { value: 0.0 },
-		'displacement': { value: null }
-	},
-
-	vertexShader: /* glsl */`
+  vertexShader: /* glsl */ `
 
 		varying vec2 vUv;
 
@@ -32,7 +21,7 @@ const customPass = {
 
 		}`,
 
-	fragmentShader: /* glsl */`
+  fragmentShader: /* glsl */ `
 
 		uniform float scale;		
 		uniform float delay;		
@@ -89,8 +78,5 @@ const customPass = {
 			//gl_FragColor = texture(displacement, vUv);
 			gl_FragColor = color;
 
-		}`
-
+		}`,
 };
-
-export { customPass };

@@ -1,4 +1,4 @@
-import { ClampToEdgeWrapping, RepeatWrapping, TextureLoader } from "three";
+import { RepeatWrapping, TextureLoader } from "three";
 
 const textureLoader = new TextureLoader();
 
