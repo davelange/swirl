@@ -1,5 +1,12 @@
 import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/Addons.js";
+import {
+  DotScreenShader,
+  EffectComposer,
+  OrbitControls,
+  RenderPass,
+  ShaderPass,
+} from "three/examples/jsm/Addons.js";
+import { customPass } from "./customPass.js";
 import Stats from "three/examples/jsm/libs/stats.module.js";
 import { loadTexture } from "./utils";
 import fragment from "./shaders/bg/fragment.glsl";
@@ -7,6 +14,7 @@ import vertex from "./shaders/bg/vertex.glsl";
 import wobFragment from "./shaders/wob/fragment.glsl";
 import wobVertex from "./shaders/wob/vertex.glsl";
 import "./app.css";
+import GUI from "lil-gui";
 
 class MyScene {
   scene = new THREE.Scene();
@@ -23,8 +31,16 @@ class MyScene {
   textureScene = new THREE.Scene();
   baseTexture = new THREE.WebGLRenderTarget();
   textureMaterial = new THREE.ShaderMaterial();
-
+  composer: EffectComposer;
   stats = new Stats();
+
+  settings: Record<string, any> = {
+    scale: 1.4,
+    smoothStepStart: 0.41,
+    smoothStepEnd: 0.85,
+  };
+
+  gui = new GUI();
 
   background: THREE.Mesh;
 
@@ -35,6 +51,32 @@ class MyScene {
     this.controls = new OrbitControls(this.camera, this.canvas);
     this.trackMouse();
     this.addObjects();
+    this.initPost();
+  }
+
+  effect1: ShaderPass;
+
+  initPost() {
+    this.composer = new EffectComposer(this.renderer);
+    this.composer.addPass(new RenderPass(this.textureScene, this.camera));
+
+    this.effect1 = new ShaderPass(customPass);
+
+    // Uniforms
+    this.effect1.uniforms["scale"].value = this.settings.scale;
+    this.effect1.uniforms["time"].value = 0;
+    this.effect1.uniforms["grainTexture"] = new THREE.Uniform(
+      loadTexture("./perlin1.png")
+    );
+    this.effect1.uniforms["smoothStepStart"].value =
+      this.settings.smoothStepStart;
+    this.effect1.uniforms["smoothStepEnd"].value = this.settings.smoothStepEnd;
+
+    this.composer.addPass(this.effect1);
+
+    this.gui.add(this.settings, "scale", 0, 10, 0.01);
+    this.gui.add(this.settings, "smoothStepStart", 0, 1, 0.01);
+    this.gui.add(this.settings, "smoothStepEnd", 0, 1, 0.01);
   }
 
   setupRenderer() {
@@ -136,28 +178,8 @@ class MyScene {
 
   clock = new THREE.Clock();
 
-  dir = 0;
-  dirF = 0;
-  unit = 0.0002;
-
   render() {
     const elapsedTime = this.clock.getElapsedTime();
-
-    if (this.dir) {
-      this.wobbly.scale.add(new THREE.Vector3(this.unit, this.unit, this.unit));
-      this.dirF++;
-      if (this.dirF === 60) {
-        this.dirF = 0;
-        this.dir = 0;
-      }
-    } else {
-      this.wobbly.scale.sub(new THREE.Vector3(this.unit, this.unit, this.unit));
-      this.dirF++;
-      if (this.dirF === 60) {
-        this.dirF = 0;
-        this.dir = 1;
-      }
-    }
 
     // Update controls
     this.controls.update();
@@ -174,9 +196,16 @@ class MyScene {
       this.uMouse.y
     );
 
+    // BG
+    this.effect1.uniforms.time.value = elapsedTime;
+    this.effect1.uniforms.scale.value = this.settings.scale;
+    this.effect1.uniforms.smoothStepStart.value = this.settings.smoothStepStart;
+    this.effect1.uniforms.smoothStepEnd.value = this.settings.smoothStepEnd;
+
     this.renderer.setRenderTarget(null);
     this.renderer.clear();
-    this.renderer.render(this.textureScene, this.camera);
+    //this.renderer.render(this.textureScene, this.camera);
+    this.composer.render();
 
     // Render
     //this.renderer.render(this.scene, this.camera);

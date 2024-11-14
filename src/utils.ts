@@ -9,5 +9,8 @@ export function loadTexture(path: string) {
     throw new Error(`Failed to load texture ${path}`);
   });
 
+  texture.wrapS = RepeatWrapping;
+  texture.wrapT = RepeatWrapping;
+
   return texture;
 }
