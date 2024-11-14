@@ -28,14 +28,16 @@ class MyScene {
   uMouse = new THREE.Vector2(0, 0);
   prevMouse = new THREE.Vector2(0, 0);
 
-  textureScene = new THREE.Scene();
-  baseTexture = new THREE.WebGLRenderTarget();
-  textureMaterial = new THREE.ShaderMaterial();
+  brushScene = new THREE.Scene();
+  //textureScene = new THREE.Scene();
+  //baseTexture = new THREE.WebGLRenderTarget();
+  brushTexture = new THREE.WebGLRenderTarget();
+  //textureMaterial = new THREE.ShaderMaterial();
   composer: EffectComposer;
   stats = new Stats();
 
   settings: Record<string, any> = {
-    scale: 1.4,
+    scale: 1.76,
     smoothStepStart: 0.41,
     smoothStepEnd: 0.85,
   };
@@ -58,7 +60,7 @@ class MyScene {
 
   initPost() {
     this.composer = new EffectComposer(this.renderer);
-    this.composer.addPass(new RenderPass(this.textureScene, this.camera));
+    this.composer.addPass(new RenderPass(this.scene, this.camera));
 
     this.effect1 = new ShaderPass(customPass);
 
@@ -67,6 +69,9 @@ class MyScene {
     this.effect1.uniforms["time"].value = 0;
     this.effect1.uniforms["grainTexture"] = new THREE.Uniform(
       loadTexture("./perlin1.png")
+    );
+    this.effect1.uniforms["displacement"] = new THREE.Uniform(
+      loadTexture("./brush.png")
     );
     this.effect1.uniforms["smoothStepStart"].value =
       this.settings.smoothStepStart;
@@ -88,7 +93,7 @@ class MyScene {
     this.renderer.setSize(this.width, this.height);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-    this.baseTexture = new THREE.WebGLRenderTarget(this.width, this.height, {
+    this.brushTexture = new THREE.WebGLRenderTarget(this.width, this.height, {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
       format: THREE.RGBAFormat,
@@ -135,45 +140,65 @@ class MyScene {
   }
 
   addObjects() {
-    this.addBackground();
-    this.addWobbly();
+    //this.addBackground();
+    this.addRipples();
+    //this.addWobbly();
   }
 
-  addBackground() {
-    let geo = new THREE.PlaneGeometry(this.width, this.height, 1, 1);
-    let t = loadTexture("./bg.webp");
-    t.wrapS = THREE.RepeatWrapping;
-    t.wrapT = THREE.RepeatWrapping;
-    this.textureMaterial = new THREE.ShaderMaterial({
-      uniforms: {
-        uTexture: new THREE.Uniform(t),
-        uDisplacement: new THREE.Uniform(null),
-        uTime: new THREE.Uniform(null),
-        uMouse: new THREE.Uniform(new THREE.Vector2(0, 0)),
-      },
-      vertexShader: vertex,
-      fragmentShader: fragment,
-    });
-    let mesh = new THREE.Mesh(geo, this.textureMaterial);
-    this.textureScene.add(mesh);
+  rippleMeshes: Array<
+    THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>
+  > = [];
+  rippleCount = 50;
+  currentRipple = 0;
+
+  addRipples() {
+    let geo = new THREE.PlaneGeometry(140, 140, 1, 1);
+    for (let index = 0; index < this.rippleCount; index++) {
+      let mat = new THREE.MeshBasicMaterial({
+        map: loadTexture("./brush.png"),
+        transparent: true,
+        depthTest: false,
+        depthWrite: false,
+      });
+      let mesh = new THREE.Mesh(geo, mat);
+      mesh.visible = false;
+      this.rippleMeshes.push(mesh);
+      this.brushScene.add(mesh);
+    }
+    window.addEventListener("mousemove", this.createRipple.bind(this));
   }
 
-  wobbly: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshBasicMaterial>;
+  createRipple() {
+    if (
+      Math.abs(this.mouse.x - this.prevMouse.x) < 2 &&
+      Math.abs(this.mouse.y - this.prevMouse.y) < 2
+    ) {
+      return;
+    }
 
-  wobblyInner: THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>;
-
-  addWobbly() {
-    let geo = new THREE.PlaneGeometry(400, 400, 1, 1);
-    let mat = new THREE.MeshBasicMaterial({
-      map: loadTexture("./disco6.png"),
-    });
-    this.wobbly = new THREE.Mesh(geo, mat);
-    this.scene.add(this.wobbly);
+    let nextMesh = this.rippleMeshes[this.currentRipple];
+    nextMesh.position.x = this.mouse.x;
+    nextMesh.position.y = this.mouse.y;
+    nextMesh.visible = true;
+    nextMesh.material.opacity = 0.5;
+    nextMesh.scale.setX(1);
+    nextMesh.scale.setY(1);
+    nextMesh.rotation.z = Math.PI * Math.random();
+    this.currentRipple = (this.currentRipple + 1) % this.rippleCount;
+    this.prevMouse.x = this.mouse.x;
+    this.prevMouse.y = this.mouse.y;
   }
 
-  updateWobbly() {
-    this.wobbly.position.x = this.mouse.x;
-    this.wobbly.position.y = this.mouse.y;
+  updateRipples() {
+    for (const ripple of this.rippleMeshes) {
+      if (ripple.material.opacity < 0.001) {
+        ripple.visible = false;
+      } else {
+        ripple.material.opacity *= 0.97;
+        ripple.scale.x = ripple.scale.x * 0.992 + 0.07;
+        ripple.scale.y = ripple.scale.y * 0.992 + 0.07;
+      }
+    }
   }
 
   clock = new THREE.Clock();
@@ -184,9 +209,11 @@ class MyScene {
     // Update controls
     this.controls.update();
 
-    this.updateWobbly();
+    this.updateRipples();
 
-    this.renderer.setRenderTarget(this.baseTexture);
+    //this.updateWobbly();
+
+    /* this.renderer.setRenderTarget(this.baseTexture);
     this.renderer.render(this.scene, this.camera);
     this.textureMaterial.uniforms.uDisplacement.value =
       this.baseTexture.texture;
@@ -194,17 +221,22 @@ class MyScene {
     this.textureMaterial.uniforms.uMouse.value = new THREE.Vector2(
       this.uMouse.x,
       this.uMouse.y
-    );
+    ); */
+
+    this.renderer.setRenderTarget(this.brushTexture);
+    this.renderer.render(this.brushScene, this.camera);
 
     // BG
+    this.effect1.uniforms.displacement.value = this.brushTexture.texture;
     this.effect1.uniforms.time.value = elapsedTime;
     this.effect1.uniforms.scale.value = this.settings.scale;
     this.effect1.uniforms.smoothStepStart.value = this.settings.smoothStepStart;
     this.effect1.uniforms.smoothStepEnd.value = this.settings.smoothStepEnd;
 
-    this.renderer.setRenderTarget(null);
-    this.renderer.clear();
+    //this.renderer.setRenderTarget(null);
+    //this.renderer.clear();
     //this.renderer.render(this.textureScene, this.camera);
+
     this.composer.render();
 
     // Render
