@@ -13,14 +13,11 @@ const customPass = {
 	name: 'CustomShader',
 
 	uniforms: {
-		'tDiffuse': { value: null },
-		'tSize': { value: new Vector2( 256, 256 ) },
-		'center': { value: new Vector2( 0.5, 0.5 ) },
-		'angle': { value: 1.57 },
 		'scale': { value: 1.0 },
 		'smoothStepStart': { value: 1.0 },
 		'smoothStepEnd': { value: 1.0 },
 		'time': { value: 0.0 },
+		'delay': { value: 0.0 },
 		'displacement': { value: null }
 	},
 
@@ -37,16 +34,14 @@ const customPass = {
 
 	fragmentShader: /* glsl */`
 
-		uniform vec2 center;
-		uniform float angle;
-		uniform float scale;
-		uniform float time;
+		uniform float scale;		
+		uniform float delay;		
+		uniform float time;		
 		uniform float smoothStepStart;
-		uniform float smoothStepEnd;
-		uniform vec2 tSize;
-		uniform sampler2D tDiffuse;
+		uniform float smoothStepEnd;	
 		uniform sampler2D grainTexture;
 		uniform sampler2D displacement;
+
 		varying vec2 vUv;
 
         vec4 bgColor = vec4(1., 0.97, 0.94, 1.);
@@ -64,9 +59,9 @@ const customPass = {
             float timeSlow = time * 0.05;
 
             // Waves
-            p += 0.17 * cos(scale * 3.7 * p.yx + 1.23 * timeSlow + vec2(2.2,3.4));        
-            p += 0.31 * cos(scale * 2.3 * p.yx + 3.5 * timeSlow + vec2(3.2,1.3));            
-            p += 0.31 * cos(scale * 5.3 * p.xy + 7.5 * timeSlow + vec2(3.2,1.3));                        
+            p += 0.17 * cos(scale * 3.7 * p.yx + 1.23 * timeSlow + delay * vec2(2.2,3.4));        
+            p += 0.31 * cos(scale * 2.3 * p.yx + 3.5 * timeSlow + delay * vec2(3.2,1.3));            
+            p += 0.31 * cos(scale * 5.3 * p.xy + 7.5 * timeSlow + delay * vec2(3.2,1.3));                        
 			
             // Grain
             vec2 grainUv = vUv;

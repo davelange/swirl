@@ -56,28 +56,33 @@ class MyScene {
     this.initPost();
   }
 
-  effect1: ShaderPass;
+  shaderPass: ShaderPass;
 
   initPost() {
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
 
-    this.effect1 = new ShaderPass(customPass);
+    this.shaderPass = new ShaderPass(customPass);
 
     // Uniforms
-    this.effect1.uniforms["scale"].value = this.settings.scale;
-    this.effect1.uniforms["time"].value = 0;
-    this.effect1.uniforms["grainTexture"] = new THREE.Uniform(
+
+    this.shaderPass.uniforms.scale = new THREE.Uniform(this.settings.scale);
+    this.shaderPass.uniforms.smoothStepStart = new THREE.Uniform(
+      this.settings.smoothStepStart
+    );
+    this.shaderPass.uniforms.smoothStepEnd = new THREE.Uniform(
+      this.settings.smoothStepEnd
+    );
+    this.shaderPass.uniforms.delay = new THREE.Uniform(Math.random() * 5);
+    this.shaderPass.uniforms.time = new THREE.Uniform(0);
+    this.shaderPass.uniforms.grainTexture = new THREE.Uniform(
       loadTexture("./perlin1.png")
     );
-    this.effect1.uniforms["displacement"] = new THREE.Uniform(
+    this.shaderPass.uniforms.displacement = new THREE.Uniform(
       loadTexture("./brush.png")
     );
-    this.effect1.uniforms["smoothStepStart"].value =
-      this.settings.smoothStepStart;
-    this.effect1.uniforms["smoothStepEnd"].value = this.settings.smoothStepEnd;
 
-    this.composer.addPass(this.effect1);
+    this.composer.addPass(this.shaderPass);
 
     this.gui.add(this.settings, "scale", 0, 10, 0.01);
     this.gui.add(this.settings, "smoothStepStart", 0, 1, 0.01);
@@ -227,11 +232,12 @@ class MyScene {
     this.renderer.render(this.brushScene, this.camera);
 
     // BG
-    this.effect1.uniforms.displacement.value = this.brushTexture.texture;
-    this.effect1.uniforms.time.value = elapsedTime;
-    this.effect1.uniforms.scale.value = this.settings.scale;
-    this.effect1.uniforms.smoothStepStart.value = this.settings.smoothStepStart;
-    this.effect1.uniforms.smoothStepEnd.value = this.settings.smoothStepEnd;
+    this.shaderPass.uniforms.displacement.value = this.brushTexture.texture;
+    this.shaderPass.uniforms.time.value = elapsedTime;
+    this.shaderPass.uniforms.scale.value = this.settings.scale;
+    this.shaderPass.uniforms.smoothStepStart.value =
+      this.settings.smoothStepStart;
+    this.shaderPass.uniforms.smoothStepEnd.value = this.settings.smoothStepEnd;
 
     //this.renderer.setRenderTarget(null);
     //this.renderer.clear();
