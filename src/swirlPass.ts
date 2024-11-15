@@ -8,6 +8,9 @@ export const SwirlPass = {
     time: { value: 0.0 },
     delay: { value: 0.0 },
     displacement: { value: null },
+    showWaves: { value: false },
+    showRipples: { value: false },
+    showGrain: { value: false },
   },
 
   vertexShader: /* glsl */ `
@@ -28,6 +31,10 @@ export const SwirlPass = {
 		uniform float time;		
 		uniform float smoothStepStart;
 		uniform float smoothStepEnd;	
+		uniform bool showGrain;	
+		uniform bool showRipples;	
+		uniform bool showWaves;	
+
 		uniform sampler2D grainTexture;
 		uniform sampler2D displacement;
 
@@ -49,14 +56,14 @@ export const SwirlPass = {
 
             // Waves
             p += 0.17 * cos(scale * 3.7 * p.yx + 1.23 * timeSlow + delay * vec2(2.2,3.4));        
-            p += 0.31 * cos(scale * 2.3 * p.yx + 3.5 * timeSlow + delay * vec2(3.2,1.3));            
-            p += 0.31 * cos(scale * 5.3 * p.xy + 7.5 * timeSlow + delay * vec2(3.2,1.3));                        
+            p += 0.31 * cos(scale * 2.3 * p.yx + 5.5 * timeSlow + delay * vec2(3.2,1.3));            
+            p += 0.31 * cos(scale * 5.3 * p.xy + 7.5 * timeSlow + delay * vec2(1.2,1.3));                        
 			
             // Grain
             vec2 grainUv = vUv;
-            grainUv *= vec2(20.,20.);
+            grainUv *= vec2(25.,25.);
 			float grain = texture( grainTexture, grainUv ).r;			
-            grain *= smoothstep(0.3, 0.7, grain) *  0.1;
+            grain *= smoothstep(0.3, 0.9, grain) *  0.1;            
 
 			// Ripples
 			vec4 disp = texture2D(displacement, vUv);
@@ -66,17 +73,26 @@ export const SwirlPass = {
 
 			// Interpolate colors
 
-            // Blue to orange
-            float innerDist = smoothstep(0.1, 0.21, length(p) - grain);
+            // Blue to orange / 0.244
+            float innerDist = smoothstep(smoothStepStart * 0.244, smoothStepEnd * 0.244, length(p) - grain);
             vec4 color = mix(blue, orange, innerDist);
 
             // Orange to bg
             float dist = smoothstep(smoothStepStart, smoothStepEnd, length(p) + grain);
             color = mix(color, bgColor, dist);
 
+            if(showWaves) {
+                gl_FragColor = vec4(length(p), 0.1, 0., 1.);
+            } else if(showRipples) {
+                gl_FragColor = texture(displacement, vUv);  
+            } else if(showGrain) {
+                gl_FragColor = texture( grainTexture, grainUv );
+            } else {
+                gl_FragColor = color;
+            }
+			
 
-			//gl_FragColor = texture(displacement, vUv);
-			gl_FragColor = color;
+
 
 		}`,
 };

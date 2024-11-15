@@ -64,8 +64,9 @@ export class Ripple {
         mesh.visible = false;
       } else {
         mesh.material.opacity *= 0.97;
-        mesh.scale.x = mesh.scale.x * 0.992 + 0.07;
-        mesh.scale.y = mesh.scale.y * 0.992 + 0.07;
+        mesh.scale.x = mesh.scale.x * 0.982 + 0.07;
+        mesh.scale.y = mesh.scale.y * 0.982 + 0.07;
+        mesh.rotateZ(0.003);
       }
     }
   }

@@ -31,6 +31,9 @@ class MyScene {
     scale: 1.76,
     smoothStepStart: 0.41,
     smoothStepEnd: 0.85,
+    showWaves: false,
+    showRipples: false,
+    showGrain: false,
   };
   mouse = new THREE.Vector2(0, 0);
   prevMouse = new THREE.Vector2(0, 0);
@@ -58,6 +61,15 @@ class MyScene {
     this.shaderPass = new ShaderPass(SwirlPass);
 
     this.shaderPass.uniforms.scale = new THREE.Uniform(this.settings.scale);
+    this.shaderPass.uniforms.showWaves = new THREE.Uniform(
+      this.settings.showWaves
+    );
+    this.shaderPass.uniforms.showRipples = new THREE.Uniform(
+      this.settings.showRipples
+    );
+    this.shaderPass.uniforms.showGrain = new THREE.Uniform(
+      this.settings.showGrain
+    );
     this.shaderPass.uniforms.smoothStepStart = new THREE.Uniform(
       this.settings.smoothStepStart
     );
@@ -78,6 +90,9 @@ class MyScene {
     this.gui.add(this.settings, "scale", 0, 10, 0.01);
     this.gui.add(this.settings, "smoothStepStart", 0, 1, 0.01);
     this.gui.add(this.settings, "smoothStepEnd", 0, 1, 0.01);
+    this.gui.add(this.settings, "showGrain");
+    this.gui.add(this.settings, "showWaves");
+    this.gui.add(this.settings, "showRipples");
   }
 
   setupRenderer() {
@@ -197,6 +212,9 @@ class MyScene {
     this.shaderPass.uniforms.smoothStepStart.value =
       this.settings.smoothStepStart;
     this.shaderPass.uniforms.smoothStepEnd.value = this.settings.smoothStepEnd;
+    this.shaderPass.uniforms.showGrain.value = this.settings.showGrain;
+    this.shaderPass.uniforms.showRipples.value = this.settings.showRipples;
+    this.shaderPass.uniforms.showWaves.value = this.settings.showWaves;
 
     // Render
     this.composer.render();
