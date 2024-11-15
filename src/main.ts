@@ -76,7 +76,7 @@ class MyScene {
     this.shaderPass.uniforms.smoothStepEnd = new THREE.Uniform(
       this.settings.smoothStepEnd
     );
-    const delay = randomInRange(0, 2);
+    const delay = randomInRange(2, 4);
     this.shaderPass.uniforms.delay = new THREE.Uniform(delay);
     this.shaderPass.uniforms.time = new THREE.Uniform(0);
     this.shaderPass.uniforms.grainTexture = new THREE.Uniform(

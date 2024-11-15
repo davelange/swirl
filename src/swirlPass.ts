@@ -41,8 +41,10 @@ export const SwirlPass = {
 		varying vec2 vUv;
 
         vec4 bgColor = vec4(1., 0.97, 0.94, 1.);
+        vec4 softOrange = vec4(0.976,0.624,0.443, 0.1);        
         vec4 orange = vec4(0.9556, 0.5010, 0.2745, 1.0);
         vec4 blue = vec4(0.73, 0.803, 0.901, 1.);
+        
 
 		float PI = 3.141592653589793238;
 
@@ -64,6 +66,7 @@ export const SwirlPass = {
             grainUv *= vec2(25.,25.);
 			float grain = texture( grainTexture, grainUv ).r;			
             grain *= smoothstep(0.3, 0.9, grain) *  0.1;            
+            
 
 			// Ripples
 			vec4 disp = texture2D(displacement, vUv);
@@ -74,10 +77,12 @@ export const SwirlPass = {
 			// Interpolate colors
 
             // Blue to orange / 0.244
-            float innerDist = smoothstep(smoothStepStart * 0.244, smoothStepEnd * 0.244, length(p) - grain);
-            vec4 color = mix(blue, orange, innerDist);
+            //float innerDist = smoothstep(smoothStepStart * 0.244, smoothStepEnd * 0.244, length(p) - grain);
+            float innerDist = smoothstep(-0.4, .81, length(p) - grain);
+            vec4 color = mix(softOrange, orange, innerDist);
 
             // Orange to bg
+            //float dist = smoothstep(smoothStepStart, smoothStepEnd, length(p) + grain);
             float dist = smoothstep(smoothStepStart, smoothStepEnd, length(p) + grain);
             color = mix(color, bgColor, dist);
 
