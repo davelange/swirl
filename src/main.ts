@@ -34,6 +34,8 @@ class MyScene {
     showWaves: false,
     showRipples: false,
     showGrain: false,
+    firstStageProgress: 0,
+    secondStageProgress: 0,
   };
   mouse = new THREE.Vector2(0, 0);
   prevMouse = new THREE.Vector2(0, 0);
@@ -50,6 +52,9 @@ class MyScene {
     this.trackMouse();
     this.addObjects();
     this.initPost();
+
+    this.gui.add(this.settings, "firstStageProgress", 0, 1, 0.01);
+    this.gui.add(this.settings, "secondStageProgress", 0, 1, 0.01);
   }
 
   shaderPass: ShaderPass;
@@ -60,24 +65,15 @@ class MyScene {
 
     this.shaderPass = new ShaderPass(SwirlPass);
 
-    this.shaderPass.uniforms.scale = new THREE.Uniform(this.settings.scale);
-    this.shaderPass.uniforms.showWaves = new THREE.Uniform(
-      this.settings.showWaves
-    );
-    this.shaderPass.uniforms.showRipples = new THREE.Uniform(
-      this.settings.showRipples
-    );
-    this.shaderPass.uniforms.showGrain = new THREE.Uniform(
-      this.settings.showGrain
-    );
-    this.shaderPass.uniforms.smoothStepStart = new THREE.Uniform(
-      this.settings.smoothStepStart
-    );
-    this.shaderPass.uniforms.smoothStepEnd = new THREE.Uniform(
-      this.settings.smoothStepEnd
-    );
-    const delay = randomInRange(2, 4);
-    this.shaderPass.uniforms.delay = new THREE.Uniform(delay);
+    this.shaderPass.uniforms.scale = new THREE.Uniform(0);
+    this.shaderPass.uniforms.showWaves = new THREE.Uniform(false);
+    this.shaderPass.uniforms.showRipples = new THREE.Uniform(false);
+    this.shaderPass.uniforms.showGrain = new THREE.Uniform(false);
+    this.shaderPass.uniforms.smoothStepStart = new THREE.Uniform(0);
+    this.shaderPass.uniforms.smoothStepEnd = new THREE.Uniform(0);
+    this.shaderPass.uniforms.firstStageProgress = new THREE.Uniform(0);
+    this.shaderPass.uniforms.secondStageProgress = new THREE.Uniform(0);
+    this.shaderPass.uniforms.delay = new THREE.Uniform(randomInRange(2, 4));
     this.shaderPass.uniforms.time = new THREE.Uniform(0);
     this.shaderPass.uniforms.grainTexture = new THREE.Uniform(
       loadTexture("./perlin1.png")
@@ -153,7 +149,7 @@ class MyScene {
   }
 
   ripples: Array<Ripple> = [];
-  rippleCount = 50;
+  rippleCount = 60;
   currentRipple = 0;
 
   addRipples() {
@@ -209,6 +205,10 @@ class MyScene {
     // Set shader uniforms
     this.shaderPass.uniforms.displacement.value = this.brushTexture.texture;
     this.shaderPass.uniforms.time.value = elapsedTime;
+    this.shaderPass.uniforms.firstStageProgress.value =
+      this.settings.firstStageProgress;
+    this.shaderPass.uniforms.secondStageProgress.value =
+      this.settings.secondStageProgress;
     this.shaderPass.uniforms.scale.value = this.settings.scale;
     this.shaderPass.uniforms.smoothStepStart.value =
       this.settings.smoothStepStart;

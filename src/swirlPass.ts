@@ -7,6 +7,8 @@ export const SwirlPass = {
     smoothStepEnd: { value: 1.0 },
     time: { value: 0.0 },
     delay: { value: 0.0 },
+    firstStageProgress: { value: 0.0 },
+    secondStageProgress: { value: 0.0 },
     displacement: { value: null },
     showWaves: { value: false },
     showRipples: { value: false },
@@ -31,6 +33,8 @@ export const SwirlPass = {
 		uniform float time;		
 		uniform float smoothStepStart;
 		uniform float smoothStepEnd;	
+		uniform float firstStageProgress;	
+		uniform float secondStageProgress;	
 		uniform bool showGrain;	
 		uniform bool showRipples;	
 		uniform bool showWaves;	
@@ -44,11 +48,11 @@ export const SwirlPass = {
         vec4 softOrange = vec4(0.976,0.624,0.443, 0.1);        
         vec4 orange = vec4(0.9556, 0.5010, 0.2745, 1.0);
         vec4 blue = vec4(0.73, 0.803, 0.901, 1.);
+        vec4 green = vec4(0.792,0.925,0.788, 1.);
+        vec4 white = vec4(0.95, 0.95, 0.95, 1.);
         
 
 		float PI = 3.141592653589793238;
-
-        /*  */
     
 		void main() {
             vec2 newUv = vUv;
@@ -57,9 +61,12 @@ export const SwirlPass = {
             float timeSlow = time * 0.05;
 
             // Waves
-            p += 0.17 * cos(scale * 3.7 * p.yx + 1.23 * timeSlow + delay * vec2(2.2,3.4));        
-            p += 0.31 * cos(scale * 2.3 * p.yx + 5.5 * timeSlow + delay * vec2(3.2,1.3));            
-            p += 0.31 * cos(scale * 4.3 * p.yx + 7.5 * timeSlow + delay * vec2(1.2,1.3));                        
+            float modScale = mix(scale, scale - 0.5, firstStageProgress); 
+            modScale = mix(modScale, modScale - 0.5, secondStageProgress); 
+
+            p += 0.17 * cos(modScale * 3.7 * p.yx + 1.23 * timeSlow + delay * vec2(2.2,3.4));        
+            p += 0.31 * cos(modScale * 2.3 * p.yx + 5.5 * timeSlow + delay * vec2(3.2,1.3));            
+            p += 0.31 * cos(modScale * 4.3 * p.yx + 7.5 * timeSlow + delay * vec2(1.2,1.3));                        
 			
             // Grain
             vec2 grainUv = vUv;
@@ -75,16 +82,18 @@ export const SwirlPass = {
     		p += dir * disp.r * 0.5;
 
 			// Interpolate colors
+            vec4 inner = mix(softOrange, white, firstStageProgress);            
+            vec4 intermediate = mix(orange, white, firstStageProgress);
+            vec4 outer = mix(bgColor, blue, firstStageProgress);
+            outer = mix(outer, green, secondStageProgress);
 
-            // Blue to orange / 0.244
-            //float innerDist = smoothstep(smoothStepStart * 0.244, smoothStepEnd * 0.244, length(p) - grain);
+            // Soft orange to orange / 0.244
             float innerDist = smoothstep(-0.4, .81, length(p) - grain);
-            vec4 color = mix(softOrange, orange, innerDist);
+            vec4 color = mix(inner, intermediate, innerDist);
 
             // Orange to bg
-            //float dist = smoothstep(smoothStepStart, smoothStepEnd, length(p) + grain);
             float dist = smoothstep(smoothStepStart, smoothStepEnd, length(p) + grain);
-            color = mix(color, bgColor, dist);
+            color = mix(color, outer, dist);
 
             if(showWaves) {
                 gl_FragColor = vec4(length(p), 0.1, 0., 1.);
@@ -94,10 +103,6 @@ export const SwirlPass = {
                 gl_FragColor = texture( grainTexture, grainUv );
             } else {
                 gl_FragColor = color;
-            }
-			
-
-
-
+            }			
 		}`,
 };
