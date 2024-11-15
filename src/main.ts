@@ -7,7 +7,7 @@ import {
 } from "three/examples/jsm/Addons.js";
 import { SwirlPass } from "./swirlPass.ts";
 import Stats from "three/examples/jsm/libs/stats.module.js";
-import { loadTexture } from "./utils";
+import { loadTexture, randomInRange } from "./utils";
 import GUI from "lil-gui";
 import { Ripple } from "./ripple.ts";
 
@@ -76,7 +76,8 @@ class MyScene {
     this.shaderPass.uniforms.smoothStepEnd = new THREE.Uniform(
       this.settings.smoothStepEnd
     );
-    this.shaderPass.uniforms.delay = new THREE.Uniform(Math.random() * 5);
+    const delay = randomInRange(0, 2);
+    this.shaderPass.uniforms.delay = new THREE.Uniform(delay);
     this.shaderPass.uniforms.time = new THREE.Uniform(0);
     this.shaderPass.uniforms.grainTexture = new THREE.Uniform(
       loadTexture("./perlin1.png")

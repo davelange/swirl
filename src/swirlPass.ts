@@ -57,7 +57,7 @@ export const SwirlPass = {
             // Waves
             p += 0.17 * cos(scale * 3.7 * p.yx + 1.23 * timeSlow + delay * vec2(2.2,3.4));        
             p += 0.31 * cos(scale * 2.3 * p.yx + 5.5 * timeSlow + delay * vec2(3.2,1.3));            
-            p += 0.31 * cos(scale * 5.3 * p.xy + 7.5 * timeSlow + delay * vec2(1.2,1.3));                        
+            p += 0.31 * cos(scale * 4.3 * p.yx + 7.5 * timeSlow + delay * vec2(1.2,1.3));                        
 			
             // Grain
             vec2 grainUv = vUv;
