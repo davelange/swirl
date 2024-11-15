@@ -52,12 +52,27 @@ class MyScene {
     this.trackMouse();
     this.addObjects();
     this.initPost();
-
-    this.gui.add(this.settings, "firstStageProgress", 0, 1, 0.01);
-    this.gui.add(this.settings, "secondStageProgress", 0, 1, 0.01);
+    this.initSettings();
   }
 
   shaderPass: ShaderPass;
+
+  initSettings() {
+    this.gui.add(this.settings, "firstStageProgress", 0, 1, 0.01);
+    this.gui.add(this.settings, "secondStageProgress", 0, 1, 0.01);
+    this.gui.add(this.settings, "scale", 0, 10, 0.01);
+    this.gui.add(this.settings, "smoothStepStart", 0, 1, 0.01);
+    this.gui.add(this.settings, "smoothStepEnd", 0, 1, 0.01);
+    this.gui.add(this.settings, "showGrain");
+    this.gui.add(this.settings, "showWaves");
+    this.gui.add(this.settings, "showRipples");
+  }
+
+  updateUniformsFromSettings() {
+    for (const key in this.settings) {
+      this.shaderPass.uniforms[key].value = this.settings[key];
+    }
+  }
 
   initPost() {
     this.composer = new EffectComposer(this.renderer);
@@ -65,31 +80,15 @@ class MyScene {
 
     this.shaderPass = new ShaderPass(SwirlPass);
 
-    this.shaderPass.uniforms.scale = new THREE.Uniform(0);
-    this.shaderPass.uniforms.showWaves = new THREE.Uniform(false);
-    this.shaderPass.uniforms.showRipples = new THREE.Uniform(false);
-    this.shaderPass.uniforms.showGrain = new THREE.Uniform(false);
-    this.shaderPass.uniforms.smoothStepStart = new THREE.Uniform(0);
-    this.shaderPass.uniforms.smoothStepEnd = new THREE.Uniform(0);
-    this.shaderPass.uniforms.firstStageProgress = new THREE.Uniform(0);
-    this.shaderPass.uniforms.secondStageProgress = new THREE.Uniform(0);
-    this.shaderPass.uniforms.delay = new THREE.Uniform(randomInRange(2, 4));
-    this.shaderPass.uniforms.time = new THREE.Uniform(0);
+    this.updateUniformsFromSettings();
+    this.shaderPass.uniforms.delay.value = randomInRange(2, 4);
+    this.shaderPass.uniforms.time.value = 0;
     this.shaderPass.uniforms.grainTexture = new THREE.Uniform(
       loadTexture("./perlin1.png")
     );
-    this.shaderPass.uniforms.displacement = new THREE.Uniform(
-      loadTexture("./brush.png")
-    );
+    this.shaderPass.uniforms.displacement = new THREE.Uniform(null);
 
     this.composer.addPass(this.shaderPass);
-
-    this.gui.add(this.settings, "scale", 0, 10, 0.01);
-    this.gui.add(this.settings, "smoothStepStart", 0, 1, 0.01);
-    this.gui.add(this.settings, "smoothStepEnd", 0, 1, 0.01);
-    this.gui.add(this.settings, "showGrain");
-    this.gui.add(this.settings, "showWaves");
-    this.gui.add(this.settings, "showRipples");
   }
 
   setupRenderer() {
@@ -153,13 +152,10 @@ class MyScene {
   currentRipple = 0;
 
   addRipples() {
-    let texture = loadTexture("./brush.png");
-    let texture2 = loadTexture("./brush2.png");
+    let texture = loadTexture("./brush2.png");
 
     for (let index = 0; index < this.rippleCount; index++) {
-      this.ripples.push(
-        new Ripple({ texture, texture2, scene: this.brushScene })
-      );
+      this.ripples.push(new Ripple({ texture, scene: this.brushScene }));
     }
 
     window.addEventListener("mousemove", this.createRipple.bind(this));
@@ -203,19 +199,9 @@ class MyScene {
     this.renderer.render(this.brushScene, this.camera);
 
     // Set shader uniforms
+    this.updateUniformsFromSettings();
     this.shaderPass.uniforms.displacement.value = this.brushTexture.texture;
     this.shaderPass.uniforms.time.value = elapsedTime;
-    this.shaderPass.uniforms.firstStageProgress.value =
-      this.settings.firstStageProgress;
-    this.shaderPass.uniforms.secondStageProgress.value =
-      this.settings.secondStageProgress;
-    this.shaderPass.uniforms.scale.value = this.settings.scale;
-    this.shaderPass.uniforms.smoothStepStart.value =
-      this.settings.smoothStepStart;
-    this.shaderPass.uniforms.smoothStepEnd.value = this.settings.smoothStepEnd;
-    this.shaderPass.uniforms.showGrain.value = this.settings.showGrain;
-    this.shaderPass.uniforms.showRipples.value = this.settings.showRipples;
-    this.shaderPass.uniforms.showWaves.value = this.settings.showWaves;
 
     // Render
     this.composer.render();
